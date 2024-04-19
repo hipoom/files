@@ -22,8 +22,8 @@ static String getProductArtifactId() {
 /**
  * 版本号。
  */
-static String getVersion() {
-    return "0.0.1"
+static String getProductVersion() {
+    return "0.0.3"
 }
 
 // 配置签名，上传到 central maven 必须要签名
@@ -90,8 +90,8 @@ publishing {
         hipoomLocal(MavenPublication) {
             // 基本信息
             groupId 'com.hipoom'
-            artifactId "files"
-            version "0.0.2"
+            artifactId getProductArtifactId()
+            version getProductVersion()
 
             //打包源码和class
             from components.java
