@@ -7,8 +7,12 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
@@ -16,7 +20,7 @@ import java.nio.channels.FileLock;
  * @author ZhengHaiPeng
  * @since 4/18/24 00:15 PM
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "CallToPrintStackTrace"})
 public class Files {
 
     /* ======================================================= */
@@ -128,7 +132,7 @@ public class Files {
         File[] children = file.listFiles();
 
         // if no children, delete this empty dir.
-        if (children == null || children.length == 0) {
+        if (children == null) {
             return file.delete();
         }
 
@@ -173,6 +177,25 @@ public class Files {
             }
             if (outPolicy == AutoClosePolicy.CLOSE) {
                 closeQuietly(os);
+            }
+        }
+    }
+
+    public static boolean copy(Reader reader, AutoClosePolicy inPolicy, Writer writer) {
+        char[] buffer = new char[8 * 1024];
+        try {
+            int length = reader.read(buffer);
+            while (length >= 0) {
+                writer.write(buffer, 0, length);
+                length = reader.read(buffer);
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (inPolicy == AutoClosePolicy.CLOSE) {
+                closeQuietly(reader);
             }
         }
     }
@@ -311,12 +334,54 @@ public class Files {
 
 
     /**
+     * Read short text from input stream.
+     *
+     * @param is the input stream.
+     * @param policy closing policy for input stream.
+     *
+     * @return text read from input stream.
+     */
+    public static String readText(InputStream is, AutoClosePolicy policy) {
+        InputStreamReader reader = new InputStreamReader(is);
+        StringWriter writer = new StringWriter();
+        boolean isSuccess = copy(reader, policy, writer);
+        if (isSuccess) {
+            String res = writer.toString();
+            closeQuietly(writer);
+            return res;
+        }
+        closeQuietly(writer);
+        return null;
+    }
+
+    /**
+     * Read text from file.
+     */
+    public static String readText(File file) {
+        if (!file.exists()) {
+            return null;
+        }
+        if (!file.isFile()) {
+            return null;
+        }
+
+        FileInputStream fis;
+        try {
+            fis = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            return null;
+        }
+        return readText(fis, AutoClosePolicy.CLOSE);
+    }
+
+
+    /**
      * Close stream or other closeable obj quietly.
      *
      * @param closeable file stream or other closeable obj.
      */
     public static void closeQuietly(Closeable... closeable) {
-        if (closeable == null || closeable.length == 0) {
+        if (closeable == null) {
             return;
         }
         for (Closeable c : closeable) {
