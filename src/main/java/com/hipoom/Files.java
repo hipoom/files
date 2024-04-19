@@ -485,8 +485,4 @@ public class Files {
         DON_NOT_CLOSE
     }
 
-    public static void main(String[] args) {
-        int code = copy(new File("/Users/zhp/Downloads/AndroidScaffold/gradle"), new File("/Users/zhp/Downloads/AndroidScaffold/gradle-copy"), DstFileExistPolicy.Overwrite);
-        System.out.println(code);
-    }
 }
