@@ -8,6 +8,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 
 /**
  * @author ZhengHaiPeng
@@ -220,12 +223,90 @@ public class Files {
     }
 
 
+    /**
+     * Move file from source to destination.
+     *
+     * @param source source file or directory.
+     * @param destination dst file or directory.
+     * @param policy Processing policy when copying files if the destination file already exist.
+     *
+     * @return
+     *  0: move success.
+     * -1: the source file doesn't exist.
+     * -2: if policy is Overwrite, and delete old destination file failed.
+     * -3: failed to create directory for the destination file.
+     * -4: failed to move file, because the source file has been opened.
+     * -5: failed to copy then delete.
+     */
     public static int rename(File source, File destination, DstFileExistPolicy policy) {
         if (!source.exists()) {
             return -1;
         }
 
+        boolean isDstExist = destination.exists();
+        if (isDstExist) {
+            switch (policy) {
+                case GiveUp: {
+                    return CODE_SUCCESS;
+                }
+                case ThrowException: {
+                    throw new RuntimeException("The destination file already exist.");
+                }
+                case Overwrite:
+                default: {
+                    boolean isSuccess = delete(destination);
+                    if (!isSuccess) {
+                        return -2;
+                    }
+                } // end default/Overwrite
+            } // end switch
+        } // end if
 
+        // if create target's parent dir failed, return -3
+        int code = ensureParentDirectory(destination);
+        if (code == -2) {
+            return -3;
+        }
+
+        boolean isSuccess = source.renameTo(destination);
+        if (isSuccess) {
+            return CODE_SUCCESS;
+        }
+
+        // if file rename failed, maybe file opened already.
+        code = isFileOpened(source);
+        // if file opened, return -4
+        if (code == CODE_SUCCESS) {
+            return -4;
+        }
+
+        // if the file was not opened, try copy then delete old file.
+        code = moveByCopyThenDelete(source, destination);
+        if (code != CODE_SUCCESS) {
+            return -5;
+        }
+
+        return CODE_SUCCESS;
+    }
+
+    /**
+     * @return
+     *  0: success
+     * -1: failed to copy
+     * -2: failed to delete
+     */
+    public static int moveByCopyThenDelete(File src, File dst) {
+        int code = copyFile(src, dst, DstFileExistPolicy.Overwrite);
+        if (code != CODE_SUCCESS) {
+            return -1;
+        }
+
+        boolean isDeleteSuccess = delete(src);
+        if (!isDeleteSuccess) {
+            return -2;
+        }
+
+        return CODE_SUCCESS;
     }
 
 
@@ -276,6 +357,44 @@ public class Files {
             e.printStackTrace();
         }
         return null;
+    }
+
+
+    /**
+     * Check if the file has been opened.
+     *
+     * @return
+     *  0: the file was not opened.
+     * -1: the file has been opened.
+     * -2: an exception occurred while checking.
+     * -3: failed to create FileChanel obj.
+     */
+    public static int isFileOpened(File file) {
+        try {
+            FileLock lock;
+            try (RandomAccessFile access = new RandomAccessFile(file, "rw")) {
+                FileChannel channel = access.getChannel();
+                if (channel == null) {
+                    return -3;
+                }
+                lock = channel.tryLock();
+                // access/channel/lock will close automatically
+            }
+            if (lock == null) {
+                return -1;
+            }
+
+            try {
+                if (lock.isValid()) {
+                    lock.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return 0;
+        } catch (Exception e) {
+            return -2;
+        }
     }
 
 
