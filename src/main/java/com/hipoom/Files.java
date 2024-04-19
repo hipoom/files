@@ -1,10 +1,12 @@
 package com.hipoom;
 
+import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -376,6 +378,61 @@ public class Files {
 
 
     /**
+     * Write text into file.
+     *
+     * @return
+     *  0: success to write text, or target file exist already and policy is GiveUp.
+     * -1: failed to create the directory of target file.
+     * -2: failed to delete old file.
+     * -3: failed to create target file.
+     * -4: an exception occurred while writing.
+     */
+    public static int writeText(File file, String text, DstFileExistPolicy policy) {
+        int code = ensureParentDirectory(file);
+        if (code != CODE_SUCCESS) {
+            return -1;
+        }
+
+        boolean isDstExist = file.exists();
+        if (isDstExist) {
+            switch (policy) {
+                case GiveUp: {
+                    return 0;
+                }
+                case ThrowException: {
+                    throw new RuntimeException("The destination file already exist.");
+                }
+                case Overwrite:
+                default: {
+                    boolean isSuccess = delete(file);
+                    if (!isSuccess) {
+                        return -2;
+                    }
+                } // end default/Overwrite
+            } // end switch
+        } // end if
+
+        // 写入文件
+        try {
+            // 创建新文件
+            boolean isCreateSuccess = file.createNewFile();
+            if (!isCreateSuccess) {
+                return -3;
+            }
+            // 写入
+            BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+            writer.write(text);
+            closeQuietly(writer);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -4;
+        }
+
+        return CODE_SUCCESS;
+    }
+
+
+    /**
      * Close stream or other closeable obj quietly.
      *
      * @param closeable file stream or other closeable obj.
@@ -423,7 +480,6 @@ public class Files {
         }
         return null;
     }
-
 
     /**
      * Check if the file has been opened.
