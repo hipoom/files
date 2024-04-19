@@ -13,6 +13,6 @@ repositories {
 }
 
 dependencies {
-  implementation 'com.hipoom:files:0.0.2'
+  implementation 'com.hipoom:files:0.0.3'
 }
 ```
