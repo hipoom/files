@@ -1,5 +1,7 @@
 # Files 
 
+![registry](https://img.shields.io/maven-central/v/com.hipoom/registry)    ![](https://img.shields.io/github/last-commit/hipoom/registry?color=blue)     ![](https://img.shields.io/github/license/hipoom/registry)
+
 
 ## 💡 Introduction
 This is a lightweight file utils library.
