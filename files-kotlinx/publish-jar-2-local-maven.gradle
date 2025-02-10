@@ -6,17 +6,6 @@ apply plugin: "maven-publish"
 apply plugin: "signing"
 
 /**
- * 返回仓库的本地路径。
- */
-static String getLocalRepositoryDirectory(Project rootProject) {
-    String dir = readLocalProperty(rootProject, "maven.repository.publish")
-    if (dir == null || dir.isEmpty()) {
-        throw new IllegalStateException("请在 local.properties 中设置 maven.repository.publish 用作本地 maven 仓库地址。")
-    }
-    return dir
-}
-
-/**
  * 模块名.
  */
 static String getProductArtifactId() {
@@ -165,4 +154,15 @@ static String readLocalProperty(Project rootProject, String key) {
     }
 
     return properties.getProperty(key)
+}
+
+/**
+ * 返回仓库的本地路径。
+ */
+static String getLocalRepositoryDirectory(Project rootProject) {
+    String dir = readLocalProperty(rootProject, "maven.repository.publish")
+    if (dir == null || dir.isEmpty()) {
+        throw new IllegalStateException("请在 local.properties 中设置 maven.repository.publish 用作本地的发布仓库地址。")
+    }
+    return dir
 }
