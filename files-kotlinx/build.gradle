@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm' version '1.6.0'
+}
+
+buildDir = "/Users/zhp/Workspace/Build/files/files-kotlinx"
+
+group = 'com.hipoom'
+version = '0.0.2'
+
+apply from: "publish-jar-2-local-maven.gradle"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+
+    implementation "com.hipoom:files:0.0.3"
+}
+
+test {
+    useJUnitPlatform()
+}

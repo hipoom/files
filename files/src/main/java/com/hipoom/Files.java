@@ -31,6 +31,16 @@ public class Files {
 
     public static final int CODE_SUCCESS = 0;
 
+    /**
+     * 文件名中不应该包含的字符。
+     */
+    public static final String[] INVALID_FILE_NAME_CHARS = {
+        // for windows
+        "\"", "*", "<", ">", "?", "|",
+        // for unix
+        "\000", ":"
+    };
+
 
 
     /* ======================================================= */
@@ -518,6 +528,63 @@ public class Files {
         }
     }
 
+    /**
+     *
+     *
+     * @param file the file try lock.
+     * @param callback callback when file lock success.
+     */
+    public static void lockFile(File file, LockFileCallback callback) {
+        if (file == null || callback == null) {
+            return;
+        }
+
+        if (!file.exists()) {
+            callback.onLockFinish(-1, null);
+            return;
+        }
+
+        FileInputStream fis = inputStream(file);
+        if (fis == null) {
+            callback.onLockFinish(-2, null);
+            return;
+        }
+
+        FileChannel fc = fis.getChannel();
+        try {
+            FileLock lock = fc.lock();
+            if (lock == null) {
+                callback.onLockFinish(-3, null);
+                return;
+            }
+
+            try {
+                callback.onLockFinish(0, file);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // release lock
+            lock.release();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        closeQuietly(fc, fis);
+    }
+
+    /**
+     * 判断一个字符串是否可以用作文件名。
+     */
+    public static boolean isFileNameValid(String name) {
+        for (String key : INVALID_FILE_NAME_CHARS) {
+            if (name.contains(key)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
 
     /* ======================================================= */
@@ -606,4 +673,20 @@ public class Files {
         DON_NOT_CLOSE
     }
 
+    /**
+     * 锁定文件后的回调。
+     */
+    public interface LockFileCallback {
+
+        /**
+         * @param code 0: Success,
+         *             -1: file not exist;
+         *             -2: open file failed;
+         *             -3: lock file failed;
+         *             -4: other.
+         * @param file null if code != 0.
+         */
+        void onLockFinish(int code, File file);
+
+    }
 }

@@ -2,6 +2,8 @@ plugins {
     id 'java'
 }
 
+buildDir = "/Users/zhp/Workspace/Build/cli/files"
+
 group = 'com.hipoom'
 version = '0.0.2'
 
