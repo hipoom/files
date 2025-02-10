@@ -3,7 +3,20 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.6.0'
 }
 
-buildDir = "/Users/zhp/Workspace/Build/files/files-kotlinx"
+File localProperties = new File(projectDir, "local.properties")
+if (localProperties.exists()) {
+    FileInputStream fis = new FileInputStream(localProperties)
+    Properties properties = new Properties()
+    properties.load(fis)
+    if (properties.contains("build.dir")) {
+        String buildDirConfig = properties.getProperty("build.dir")
+        buildDir = new File(buildDirConfig)
+    }
+    fis.close()
+}
+
+setSourceCompatibility(JavaVersion.VERSION_1_8)
+setTargetCompatibility(JavaVersion.VERSION_1_8)
 
 group = 'com.hipoom'
 version = '0.0.2'
